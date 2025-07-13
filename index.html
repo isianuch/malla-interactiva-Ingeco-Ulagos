@@ -1,52 +1,127 @@
-index.html
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Malla Interactiva</title>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Malla Universitaria con Prerrequisitos</title>
   <style>
-    body { margin: 0; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
-    #controls { margin: 1em; }
-    #grid { display: grid; gap: 2px; }
-    .cell { width: 30px; height: 30px; background: #eee; transition: background 0.2s; cursor: pointer; }
-    .cell:hover { background: #ccc; }
-    .cell.active { background: #3498db; }
-    button { padding: 0.5em 1em; }
-    input { width: 3em; text-align: center; }
+    body { font-family: sans-serif; margin: 1em; }
+    #controls { margin-bottom: 1em; }
+    input { width: 3em; margin-right: .5em; }
+    button { padding: .4em .8em; margin-right: .5em; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td {
+      border: 1px solid #999;
+      padding: .5em;
+      text-align: center;
+    }
+    td {
+      background: #f9f9f9;
+      cursor: pointer;
+    }
+    td.disabled {
+      background: #ddd;
+      cursor: not-allowed;
+      color: #666;
+    }
+    td.active {
+      background: #8bc34a;
+      color: #fff;
+    }
+    td:focus { outline: none; }
   </style>
 </head>
 <body>
+  <h1>Malla Universitaria</h1>
   <div id="controls">
-    Filas: <input id="rows" type="number" value="10" min="1" />
-    Columnas: <input id="cols" type="number" value="10" min="1" />
+    Semestres: <input id="sem" type="number" value="8" min="1"/>
+    Asignaturas/semestre: <input id="per" type="number" value="6" min="1"/>
     <button id="gen">Generar malla</button>
-    <button id="clear">Limpiar</button>
+    <button id="clear">Limpiar completados</button>
   </div>
-  <div id="grid"></div>
+
+  <table id="malla"><thead></thead><tbody></tbody></table>
+
   <script>
-    const gridEl = document.getElementById('grid');
-    const rowsIn = document.getElementById('rows');
-    const colsIn = document.getElementById('cols');
+    const semIn = document.getElementById('sem');
+    const perIn = document.getElementById('per');
     const genBtn = document.getElementById('gen');
     const clearBtn = document.getElementById('clear');
-    function buildGrid(r, c) {
-      gridEl.innerHTML = '';
-      gridEl.style.gridTemplateRows = `repeat(${r},30px)`;
-      gridEl.style.gridTemplateColumns = `repeat(${c},30px)`;
-      for (let i = 0; i < r * c; i++) {
-        const cell = document.createElement('div');
-        cell.className = 'cell';
-        cell.onclick = () => cell.classList.toggle('active');
-        gridEl.appendChild(cell);
+    const thead = document.querySelector('#malla thead');
+    const tbody = document.querySelector('#malla tbody');
+
+    // Aquí defines tus prerrequisitos:
+    // clave = "r<semestre>c<asignatura>"
+    // valor = array de IDs de las asignaturas que debe tener completadas
+    const prereqs = {
+      // Ejemplo: la asignatura de sem 2, col 1 requiere haber completado sem1 col1
+      'r2c1': ['r1c1'],
+      // Ejemplo cadena: sem3 col2 depende de sem2 col2, que depende de sem1 col2
+      'r3c2': ['r2c2'],
+      // añade todas tus reglas aquí...
+    };
+
+    function build(sem, per) {
+      // Cabecera
+      thead.innerHTML = '<tr><th>Sem</th>' +
+        Array.from({length: per}, (_, i) => `<th>Asig ${i+1}</th>`).join('') +
+        '</tr>';
+      // Filas
+      tbody.innerHTML = '';
+      for (let s = 1; s <= sem; s++) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<th>${s}</th>` +
+          Array.from({length: per}, (_, j) => 
+            `<td id="r${s}c${j+1}"></td>`
+          ).join('');
+        tbody.appendChild(tr);
+      }
+      initCells();
+      updateDisabledStates();
+    }
+
+    function initCells() {
+      tbody.querySelectorAll('td').forEach(td => {
+        td.classList.remove('active','disabled');
+        td.onclick = () => {
+          // si está bloqueada, no hacer nada
+          if (td.classList.contains('disabled')) return;
+          // alternar completado
+          td.classList.toggle('active');
+          // tras cada clic, recalculamos qué celdas desbloquear
+          updateDisabledStates();
+        };
+      });
+    }
+
+    function updateDisabledStates() {
+      // Para cada asignatura con prerrequisitos...
+      for (const [id, parents] of Object.entries(prereqs)) {
+        const cell = document.getElementById(id);
+        if (!cell) continue;
+        // ¿están TODOS los prerrequisitos activos?
+        const ok = parents.every(pid => {
+          const p = document.getElementById(pid);
+          return p && p.classList.contains('active');
+        });
+        if (ok) {
+          cell.classList.remove('disabled');
+        } else {
+          cell.classList.add('disabled');
+          cell.classList.remove('active');
+        }
       }
     }
-    genBtn.onclick = () => buildGrid(+rowsIn.value, +colsIn.value);
-    clearBtn.onclick = () =>
-      document.querySelectorAll('.cell.active').forEach(c => c.classList.remove('active'));
-    buildGrid(+rowsIn.value, +colsIn.value);
+
+    // Botones
+    genBtn.onclick = () => build(+semIn.value, +perIn.value);
+    clearBtn.onclick = () => {
+      tbody.querySelectorAll('td.active').forEach(c => c.classList.remove('active'));
+      updateDisabledStates();
+    };
+
+    // Malla inicial
+    build(+semIn.value, +perIn.value);
   </script>
 </body>
 </html>
-feat: añadir index.html con malla interactiva
-
