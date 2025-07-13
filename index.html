@@ -1,0 +1,52 @@
+index.html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Malla Interactiva</title>
+  <style>
+    body { margin: 0; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
+    #controls { margin: 1em; }
+    #grid { display: grid; gap: 2px; }
+    .cell { width: 30px; height: 30px; background: #eee; transition: background 0.2s; cursor: pointer; }
+    .cell:hover { background: #ccc; }
+    .cell.active { background: #3498db; }
+    button { padding: 0.5em 1em; }
+    input { width: 3em; text-align: center; }
+  </style>
+</head>
+<body>
+  <div id="controls">
+    Filas: <input id="rows" type="number" value="10" min="1" />
+    Columnas: <input id="cols" type="number" value="10" min="1" />
+    <button id="gen">Generar malla</button>
+    <button id="clear">Limpiar</button>
+  </div>
+  <div id="grid"></div>
+  <script>
+    const gridEl = document.getElementById('grid');
+    const rowsIn = document.getElementById('rows');
+    const colsIn = document.getElementById('cols');
+    const genBtn = document.getElementById('gen');
+    const clearBtn = document.getElementById('clear');
+    function buildGrid(r, c) {
+      gridEl.innerHTML = '';
+      gridEl.style.gridTemplateRows = `repeat(${r},30px)`;
+      gridEl.style.gridTemplateColumns = `repeat(${c},30px)`;
+      for (let i = 0; i < r * c; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.onclick = () => cell.classList.toggle('active');
+        gridEl.appendChild(cell);
+      }
+    }
+    genBtn.onclick = () => buildGrid(+rowsIn.value, +colsIn.value);
+    clearBtn.onclick = () =>
+      document.querySelectorAll('.cell.active').forEach(c => c.classList.remove('active'));
+    buildGrid(+rowsIn.value, +colsIn.value);
+  </script>
+</body>
+</html>
+feat: añadir index.html con malla interactiva
+
